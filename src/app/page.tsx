@@ -60,7 +60,7 @@ export default function Home() {
           {/* Hero background image */}
           <div className="absolute inset-0 z-0">
             <Image
-              src="/images/team_photo_1.jpg"
+              src="/images/team_group.jpg"
               alt="P.G. Brothers Kabaddi Team"
               fill
               priority
@@ -448,7 +448,7 @@ export default function Home() {
         <section className="relative py-32 md:py-48 bg-charcoal overflow-hidden border-y border-white/5">
           <div className="absolute inset-0 z-0">
             <Image
-              src="/images/team_photo_2.png"
+              src="/images/player_lineup.jpg"
               alt="Kabaddi team spirit"
               fill
               className="object-cover object-center filter brightness-[0.2] saturate-[0.7]"
@@ -489,16 +489,16 @@ export default function Home() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
               <AchievementCard
-                imageSrc="/images/team_photo_1.jpg"
-                category="TEAM • TOGETHER"
+                imageSrc="/images/team_group.jpg"
+                category="TEAM • UNITY"
                 title="Championship Team Group"
-                description="Players and supporters gathered together sharing the joy of mutual effort and sportsmanship."
+                description="The official team photo of the P.G. Brothers squad, celebrating collective dedication and team spirit."
               />
               <AchievementCard
-                imageSrc="/images/trophy_player_2.png"
-                category="VICTORY • CELEBRATION"
-                title="Championship Cup Presentation"
-                description="Best player of the tournament sitting alongside the massive victory trophy."
+                imageSrc="/images/cup_presentation.jpg"
+                category="VICTORY • PRESENTATION"
+                title="Championship Award Presentation"
+                description="Honoring the team's outstanding performers and celebrating tournament achievements."
               />
               <AchievementCard
                 imageSrc="/images/grassroots_support.png"
@@ -507,16 +507,16 @@ export default function Home() {
                 description="Providing shoes and training gear to a talented player, fueling the dreams of the community."
               />
               <AchievementCard
-                imageSrc="/images/trophy_player_11.png"
-                category="VICTORY • CELEBRATION"
-                title="Individual Merit Recognition"
-                description="Celebrating tournament achievements with two glorious trophy awards."
+                imageSrc="/images/tournament_group.jpg"
+                category="COMMUNITY • CELEBRATION"
+                title="Grand Tournament Gathering"
+                description="Teams, organizers, and supporters coming together under the banner of sportsmanship."
               />
               <AchievementCard
-                imageSrc="/images/team_photo_2.png"
-                category="COMPETITION • COMMITMENT"
-                title="Evening Tournament Stand"
-                description="A team lined up under field lights, ready to coordinate, defend, and compete."
+                imageSrc="/images/player_lineup.jpg"
+                category="COMPETITION • RESPECT"
+                title="Pre-Match Player Lineup"
+                description="Players lining up under field lights, greeting guests and demonstrating respect before the whistle blows."
               />
             </div>
           </div>
@@ -533,7 +533,7 @@ export default function Home() {
               <div className="lg:col-span-6 grid grid-cols-2 gap-4">
                 <div className="relative aspect-[3/5] w-full overflow-hidden border border-gold/10 group">
                   <Image
-                    src="/images/trophy_player_2.png"
+                    src="/images/cup_presentation.jpg"
                     alt="Kabaddi Championship Gold Trophy"
                     fill
                     className="object-cover object-center filter grayscale contrast-[1.1] brightness-[0.8] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
@@ -542,7 +542,7 @@ export default function Home() {
                 </div>
                 <div className="relative aspect-[3/5] w-full overflow-hidden border border-gold/10 group mt-8">
                   <Image
-                    src="/images/trophy_player_11.png"
+                    src="/images/team_group.jpg"
                     alt="Winner Trophy Display"
                     fill
                     className="object-cover object-center filter grayscale contrast-[1.1] brightness-[0.8] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
@@ -655,7 +655,7 @@ export default function Home() {
           {/* Background image overlay */}
           <div className="absolute inset-0 z-0 opacity-15">
             <Image
-              src="/images/team_photo_1.jpg"
+              src="/images/tournament_group.jpg"
               alt="Kabaddi background"
               fill
               className="object-cover"

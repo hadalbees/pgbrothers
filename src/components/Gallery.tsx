@@ -16,15 +16,15 @@ const categories = ["ALL", "PLAYERS", "TEAMS", "TOURNAMENTS", "TROPHIES", "COMMU
 
 const galleryData: GalleryImage[] = [
   {
-    src: "/images/team_photo_1.jpg",
-    title: "TEAM • TOGETHER",
-    description: "A group of players and organizers sharing a moment of unity during a tournament.",
+    src: "/images/team_group.jpg",
+    title: "TEAM • UNITY",
+    description: "The official team photo of the P.G. Brothers squad, celebrating collective dedication and team spirit.",
     categories: ["TEAMS", "TOURNAMENTS"],
   },
   {
-    src: "/images/trophy_player_2.png",
-    title: "VICTORY • CELEBRATION",
-    description: "An athlete sitting beside a grand championship trophy with his individual 'Best Player' cup.",
+    src: "/images/cup_presentation.jpg",
+    title: "VICTORY • PRESENTATION",
+    description: "Honoring the team's outstanding performers and celebrating tournament achievements.",
     categories: ["PLAYERS", "TROPHIES", "TOURNAMENTS"],
   },
   {
@@ -34,15 +34,15 @@ const galleryData: GalleryImage[] = [
     categories: ["COMMUNITY", "PLAYERS"],
   },
   {
-    src: "/images/trophy_player_11.png",
-    title: "VICTORY • CELEBRATION",
-    description: "A player proudly celebrating a tournament victory with the championship trophy.",
-    categories: ["PLAYERS", "TROPHIES", "TOURNAMENTS"],
+    src: "/images/tournament_group.jpg",
+    title: "COMMUNITY • CELEBRATION",
+    description: "Teams, organizers, and supporters coming together under the banner of sportsmanship.",
+    categories: ["TEAMS", "TOURNAMENTS", "COMMUNITY"],
   },
   {
-    src: "/images/team_photo_2.png",
-    title: "COMPETITION • COMMITMENT",
-    description: "A team posing together under tournament lighting, showcasing collective unity.",
+    src: "/images/player_lineup.jpg",
+    title: "COMPETITION • RESPECT",
+    description: "Players lining up under field lights, greeting guests and demonstrating respect before the whistle blows.",
     categories: ["TEAMS", "TOURNAMENTS", "COMMUNITY"],
   },
 ];
