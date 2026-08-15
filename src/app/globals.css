@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+@theme {
+  --color-charcoal: #0a0a0a;
+  --color-charcoal-light: #161616;
+  --color-charcoal-medium: #1f1f1f;
+  --color-forest-dark: #022c22;
+  --color-forest-medium: #064e3b;
+  --color-forest-light: #0d9488;
+  --color-gold: #d4af37;
+  --color-gold-hover: #b8962c;
+  --color-gold-light: #fef08a;
+  --color-off-white: #fafaf9;
+  --color-muted-red: #991b1b;
+  --color-muted-red-light: #ef4444;
+
+  --font-sans: var(--font-inter);
+  --font-oswald: var(--font-oswald);
+
+  --animate-shine: shine 3s ease-in-out infinite;
+  --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  @keyframes shine {
+    0% {
+      background-position: -200% center;
+    }
+    50% {
+      background-position: 200% center;
+    }
+    100% {
+      background-position: -200% center;
+    }
+  }
+}
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #fafaf9;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0a;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f1f1f;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #d4af37;
+}
+
+/* Glassmorphism helpers */
+.glass-nav {
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+}
+
+.glass-card {
+  background: rgba(22, 22, 22, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  border-color: rgba(212, 175, 55, 0.25);
+  background: rgba(22, 22, 22, 0.7);
+  box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.8);
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #fafaf9 30%, #d4af37 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.bg-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(212, 175, 55, 0) 0%,
+    rgba(212, 175, 55, 0.1) 50%,
+    rgba(212, 175, 55, 0) 100%
+  );
+  background-size: 200% 100%;
+}
+
+.border-glow-gold {
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.1);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
