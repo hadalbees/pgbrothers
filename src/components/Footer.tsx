@@ -1,7 +1,10 @@
 import React from "react";
 import { ArrowUp } from "lucide-react";
+import { useEditableImages } from "@/context/ImageContext";
 
 export default function Footer() {
+  const { isAdmin, logout, openLoginModal } = useEditableImages();
+
   const scrollToTop = () => {
     window.scrollTo({
       top: 0,
@@ -140,8 +143,16 @@ export default function Footer() {
 
         {/* Footer bottom */}
         <div className="flex flex-col sm:flex-row items-center justify-between pt-8 gap-4">
-          <p className="text-xs text-gray-500 font-light text-center sm:text-left">
-            © 2026 P.G. Brothers. All rights reserved. Built with passion for grassroots sports.
+          <p className="text-xs text-gray-500 font-light text-center sm:text-left select-none">
+            © 2026 P.G. Brothers. All rights{" "}
+            <span
+              onClick={isAdmin ? logout : openLoginModal}
+              className="cursor-pointer hover:text-gray-400 active:text-gold transition-colors font-light"
+              title={isAdmin ? "Click to Exit Edit Mode" : undefined}
+            >
+              reserved
+            </span>
+            . Built with passion for grassroots sports.
           </p>
 
           <button

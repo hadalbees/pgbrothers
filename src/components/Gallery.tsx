@@ -3,54 +3,21 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
-
-interface GalleryImage {
-  src: string;
-  title: string;
-  description: string;
-  categories: string[];
-}
+import { X, ChevronLeft, ChevronRight, Maximize2, Trash2, Edit2, Plus } from "lucide-react";
+import { useEditableImages, compressImage } from "@/context/ImageContext";
+import { GalleryImage } from "@/utils/db";
 
 const categories = ["ALL", "PLAYERS", "TEAMS", "TOURNAMENTS", "TROPHIES", "COMMUNITY"];
 
-const galleryData: GalleryImage[] = [
-  {
-    src: "/images/team_group.jpg",
-    title: "TEAM • UNITY",
-    description: "The official team photo of the P.G. Brothers squad, celebrating collective dedication and team spirit.",
-    categories: ["TEAMS", "TOURNAMENTS"],
-  },
-  {
-    src: "/images/cup_presentation.jpg",
-    title: "VICTORY • PRESENTATION",
-    description: "Honoring the team's outstanding performers and celebrating tournament achievements.",
-    categories: ["PLAYERS", "TROPHIES", "TOURNAMENTS"],
-  },
-  {
-    src: "/images/grassroots_support.png",
-    title: "THE JOURNEY • CONTINUES",
-    description: "Encouraging a young athlete with sporting gear to support his training and progression.",
-    categories: ["COMMUNITY", "PLAYERS"],
-  },
-  {
-    src: "/images/tournament_group.jpg",
-    title: "COMMUNITY • CELEBRATION",
-    description: "Teams, organizers, and supporters coming together under the banner of sportsmanship.",
-    categories: ["TEAMS", "TOURNAMENTS", "COMMUNITY"],
-  },
-  {
-    src: "/images/player_lineup.jpg",
-    title: "COMPETITION • RESPECT",
-    description: "Players lining up under field lights, greeting guests and demonstrating respect before the whistle blows.",
-    categories: ["TEAMS", "TOURNAMENTS", "COMMUNITY"],
-  },
-];
-
 export default function Gallery() {
+  const { gallery, updateGalleryImages, isAdmin } = useEditableImages();
   const [activeCategory, setActiveCategory] = useState("ALL");
-  const [filteredImages, setFilteredImages] = useState<GalleryImage[]>(galleryData);
+  const [filteredImages, setFilteredImages] = useState<GalleryImage[]>(gallery);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  // State for editing image details
+  const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
+  const [editingImageIndex, setEditingImageIndex] = useState<number | null>(null);
   
   // Touch coordinates for mobile swipe
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -58,13 +25,13 @@ export default function Gallery() {
 
   useEffect(() => {
     if (activeCategory === "ALL") {
-      setFilteredImages(galleryData);
+      setFilteredImages(gallery);
     } else {
       setFilteredImages(
-        galleryData.filter((img) => img.categories.includes(activeCategory))
+        gallery.filter((img) => img.categories.includes(activeCategory))
       );
     }
-  }, [activeCategory]);
+  }, [activeCategory, gallery]);
 
   // Handle keyboard navigation for lightbox
   useEffect(() => {
@@ -117,6 +84,54 @@ export default function Gallery() {
 
   return (
     <div className="w-full">
+      {/* Admin upload section */}
+      {isAdmin && (
+        <div className="mb-8 p-6 border border-dashed border-gold/20 bg-charcoal/20 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div>
+            <h4 className="text-sm font-oswald font-bold text-white uppercase tracking-wider">
+              Gallery Administration
+            </h4>
+            <p className="text-xs text-gray-400 font-light mt-1">
+              Select multiple photos to upload. Added photos will scale and display instantly.
+            </p>
+          </div>
+          <button
+            onClick={() => {
+              const input = document.createElement("input");
+              input.type = "file";
+              input.multiple = true;
+              input.accept = "image/*";
+              input.onchange = async (e) => {
+                const files = (e.target as HTMLInputElement).files;
+                if (files && files.length > 0) {
+                  const newImages = [...gallery];
+                  for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    try {
+                      const base64 = await compressImage(file);
+                      newImages.push({
+                        src: base64,
+                        title: file.name.substring(0, file.name.lastIndexOf('.')) || file.name,
+                        description: "Uploaded image via P.G. Brothers admin portal.",
+                        categories: ["ALL", activeCategory !== "ALL" ? activeCategory : "COMMUNITY"],
+                      });
+                    } catch (err) {
+                      console.error("Compression error:", err);
+                    }
+                  }
+                  await updateGalleryImages(newImages);
+                }
+              };
+              input.click();
+            }}
+            className="px-4 py-2 bg-gold hover:bg-white text-charcoal text-xs font-bold uppercase tracking-wider transition-colors duration-200 flex items-center gap-1.5 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            Upload Photo(s)
+          </button>
+        </div>
+      )}
+
       {/* Category Buttons */}
       <div className="flex flex-wrap justify-center items-center gap-2 mb-10 md:mb-14">
         {categories.map((category) => (
@@ -142,7 +157,7 @@ export default function Gallery() {
         <AnimatePresence mode="popLayout">
           {filteredImages.map((img, idx) => {
             // Find global index to prevent layout issues
-            const globalIndex = galleryData.findIndex((gImg) => gImg.src === img.src);
+            const globalIndex = gallery.findIndex((gImg) => gImg.src === img.src);
             
             // Determine sizes for visual variety
             const isWide = idx === 0 || idx === 4;
@@ -168,6 +183,36 @@ export default function Gallery() {
                   sizes="(max-w-768px) 100vw, (max-w-1200px) 50vw, 33vw"
                   className="object-cover transition-transform duration-700 ease-out group-hover:scale-105 filter brightness-90 group-hover:brightness-75"
                 />
+
+                {/* Admin overlay edit/delete buttons */}
+                {isAdmin && (
+                  <div className="absolute top-3 right-3 z-20 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingImage(img);
+                        setEditingImageIndex(globalIndex);
+                      }}
+                      className="p-2 bg-charcoal/90 hover:bg-gold text-white hover:text-charcoal border border-white/10 hover:border-gold cursor-pointer transition-colors"
+                      title="Edit Photo Info"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (confirm("Are you sure you want to remove this photo from the gallery?")) {
+                          const newGallery = gallery.filter((g) => g.src !== img.src);
+                          await updateGalleryImages(newGallery);
+                        }
+                      }}
+                      className="p-2 bg-charcoal/90 hover:bg-red-600 text-red-500 hover:text-white border border-white/10 hover:border-red-600 cursor-pointer transition-colors"
+                      title="Remove Photo"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Hover overlay details */}
                 <div className="absolute inset-0 bg-gradient-to-t from-charcoal/90 via-charcoal/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
@@ -203,7 +248,7 @@ export default function Gallery() {
 
       {/* Fullscreen Lightbox Modal */}
       <AnimatePresence>
-        {lightboxIndex !== null && (
+        {lightboxIndex !== null && filteredImages[lightboxIndex] && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -220,7 +265,7 @@ export default function Gallery() {
               </span>
               <button
                 onClick={() => setLightboxIndex(null)}
-                className="p-2 hover:bg-white/5 border border-white/10 hover:border-gold/30 hover:text-gold text-white transition-colors duration-300 focus:outline-none"
+                className="p-2 hover:bg-white/5 border border-white/10 hover:border-gold/30 hover:text-gold text-white transition-colors duration-300 focus:outline-none cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -231,7 +276,7 @@ export default function Gallery() {
               {/* Previous Button */}
               <button
                 onClick={handlePrev}
-                className="absolute left-2 md:left-4 p-3 bg-charcoal/70 border border-white/5 hover:border-gold/30 text-white hover:text-gold z-10 transition-colors focus:outline-none"
+                className="absolute left-2 md:left-4 p-3 bg-charcoal/70 border border-white/5 hover:border-gold/30 text-white hover:text-gold z-10 transition-colors focus:outline-none cursor-pointer"
                 aria-label="Previous image"
               >
                 <ChevronLeft className="w-6 h-6" />
@@ -252,7 +297,7 @@ export default function Gallery() {
               {/* Next Button */}
               <button
                 onClick={handleNext}
-                className="absolute right-2 md:right-4 p-3 bg-charcoal/70 border border-white/5 hover:border-gold/30 text-white hover:text-gold z-10 transition-colors focus:outline-none"
+                className="absolute right-2 md:right-4 p-3 bg-charcoal/70 border border-white/5 hover:border-gold/30 text-white hover:text-gold z-10 transition-colors focus:outline-none cursor-pointer"
                 aria-label="Next image"
               >
                 <ChevronRight className="w-6 h-6" />
@@ -282,6 +327,121 @@ export default function Gallery() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* EDIT GALLERY IMAGE METADATA MODAL */}
+      {editingImage !== null && editingImageIndex !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+          <div className="w-full max-w-md bg-charcoal border border-gold/30 p-8 relative shadow-2xl">
+            <button
+              onClick={() => {
+                setEditingImage(null);
+                setEditingImageIndex(null);
+              }}
+              className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-2xl font-oswald font-bold text-white uppercase tracking-wider mb-6">
+              Edit Image Details
+            </h3>
+            
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                const newGallery = [...gallery];
+                newGallery[editingImageIndex] = editingImage;
+                await updateGalleryImages(newGallery);
+                setEditingImage(null);
+                setEditingImageIndex(null);
+              } catch (err) {
+                alert("Error saving gallery metadata");
+              }
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Image Title
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingImage.title || ""}
+                    onChange={(e) => setEditingImage({...editingImage, title: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors animate-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Description
+                  </label>
+                  <textarea
+                    rows={3}
+                    required
+                    value={editingImage.description || ""}
+                    onChange={(e) => setEditingImage({...editingImage, description: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-2">
+                    Categories
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {["PLAYERS", "TEAMS", "TOURNAMENTS", "TROPHIES", "COMMUNITY"].map((cat) => {
+                      const hasCat = editingImage.categories.includes(cat);
+                      return (
+                        <button
+                          type="button"
+                          key={cat}
+                          onClick={() => {
+                            let newCats = [...editingImage.categories];
+                            if (hasCat) {
+                              newCats = newCats.filter((c) => c !== cat);
+                            } else {
+                              newCats.push(cat);
+                            }
+                            // Always ensure 'ALL' is set if it has categories, otherwise fallback
+                            if (!newCats.includes("ALL")) {
+                              newCats.push("ALL");
+                            }
+                            setEditingImage({ ...editingImage, categories: newCats });
+                          }}
+                          className={`px-3 py-1.5 text-[10px] font-bold tracking-wider transition-all duration-300 uppercase cursor-pointer ${
+                            hasCat
+                              ? "bg-gold text-charcoal border border-gold"
+                              : "bg-black/50 text-gray-400 border border-white/10 hover:border-gold/30"
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-8 flex gap-4">
+                <button
+                  type="submit"
+                  className="flex-grow py-3 bg-gold text-charcoal font-bold uppercase tracking-widest hover:bg-white transition-colors duration-300 text-xs cursor-pointer"
+                >
+                  Save Info
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingImage(null);
+                    setEditingImageIndex(null);
+                  }}
+                  className="px-6 py-3 bg-transparent hover:bg-white/5 text-white border border-white/10 hover:border-white font-bold uppercase tracking-widest transition-colors duration-300 text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

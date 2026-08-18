@@ -7,18 +7,20 @@ interface SupportCardProps {
   title: string;
   description: string;
   iconName: keyof typeof Icons;
+  onClick?: (e: React.MouseEvent<HTMLDivElement>) => void;
 }
 
-export default function SupportCard({ number, title, description, iconName }: SupportCardProps) {
+export default function SupportCard({ number, title, description, iconName, onClick }: SupportCardProps) {
   const IconComponent = Icons[iconName] as React.ComponentType<{ className?: string }>;
 
   return (
     <motion.div
+      onClick={onClick}
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.5 }}
-      className="glass-card p-8 flex flex-col justify-between group relative overflow-hidden h-full border-t-[3px] border-t-transparent hover:border-t-gold"
+      className="glass-card p-8 flex flex-col justify-between group relative overflow-hidden h-full border-t-[3px] border-t-transparent hover:border-t-gold cursor-pointer"
     >
       {/* Background glow hover effect */}
       <div className="absolute inset-0 bg-shimmer -translate-x-full group-hover:translate-x-0 transition-transform duration-1000 ease-out pointer-events-none" />
@@ -43,7 +45,7 @@ export default function SupportCard({ number, title, description, iconName }: Su
       </div>
 
       <div className="mt-6 flex items-center text-xs font-bold text-gold opacity-0 group-hover:opacity-100 transition-opacity duration-300 gap-1 uppercase tracking-widest">
-        Support details <Icons.ChevronRight className="w-3 h-3" />
+        Give Support <Icons.ChevronRight className="w-3 h-3" />
       </div>
     </motion.div>
   );

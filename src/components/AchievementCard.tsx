@@ -1,54 +1,77 @@
 import React from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { Trash2, Edit2 } from "lucide-react";
+import { useEditableImages } from "@/context/ImageContext";
+import { AchievementItem } from "@/utils/db";
 
 interface AchievementCardProps {
-  imageSrc: string;
-  category: string;
-  title: string;
-  description: string;
-  onClick?: () => void;
+  achievement: AchievementItem;
+  index: number;
+  onEdit?: (achievement: AchievementItem) => void;
+  onDelete?: (id: string) => void;
 }
 
 export default function AchievementCard({
-  imageSrc,
-  category,
-  title,
-  description,
-  onClick,
+  achievement,
+  index,
+  onEdit,
+  onDelete,
 }: AchievementCardProps) {
+  const { isAdmin } = useEditableImages();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5 }}
-      onClick={onClick}
-      className="group relative overflow-hidden aspect-[4/3] w-full border border-white/5 cursor-pointer"
+      className="group relative overflow-hidden aspect-[4/3] w-full border border-white/5"
     >
+      {/* Admin Quick Actions */}
+      {isAdmin && (
+        <div className="absolute top-3 right-3 z-30 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <button
+            onClick={() => onEdit?.(achievement)}
+            className="p-2 bg-charcoal/90 hover:bg-gold text-white hover:text-charcoal border border-white/10 hover:border-gold cursor-pointer transition-colors"
+            title="Edit Details"
+          >
+            <Edit2 className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => onDelete?.(achievement.id)}
+            className="p-2 bg-charcoal/90 hover:bg-red-600 text-red-500 hover:text-white border border-white/10 hover:border-red-600 cursor-pointer transition-colors"
+            title="Delete Moment"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Background image with hover zoom */}
       <Image
-        src={imageSrc}
-        alt={title}
+        src={achievement.imageSrc}
+        alt={achievement.title}
         fill
+        unoptimized
         sizes="(max-w-768px) 100vw, 33vw"
         className="object-cover transition-transform duration-700 ease-out group-hover:scale-110 filter brightness-[0.75] contrast-[1.05] group-hover:brightness-[0.85]"
       />
 
       {/* Dark overlay with gold accent line on bottom */}
-      <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/30 to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gold scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left" />
+      <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-charcoal/30 to-transparent pointer-events-none" />
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gold scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-left pointer-events-none" />
 
       {/* Text Content */}
-      <div className="absolute inset-0 p-6 flex flex-col justify-end">
+      <div className="absolute inset-0 p-6 flex flex-col justify-end pointer-events-none">
         <span className="text-[10px] font-bold text-gold uppercase tracking-widest mb-1.5 opacity-95">
-          {category}
+          {achievement.category}
         </span>
         <h4 className="text-xl font-oswald font-bold text-white uppercase tracking-wide leading-tight group-hover:text-gold transition-colors">
-          {title}
+          {achievement.title}
         </h4>
         <p className="text-gray-300 text-xs mt-1.5 line-clamp-2 font-light max-w-md opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-y-2 group-hover:translate-y-0">
-          {description}
+          {achievement.description}
         </p>
       </div>
     </motion.div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import {
@@ -17,6 +17,12 @@ import {
   ChevronRight,
   MousePointerClick,
   Sparkles,
+  Lock,
+  Unlock,
+  LogOut,
+  RefreshCw,
+  X,
+  Plus,
 } from "lucide-react";
 
 import Navbar from "@/components/Navbar";
@@ -27,9 +33,103 @@ import PlayerCard from "@/components/PlayerCard";
 import AchievementCard from "@/components/AchievementCard";
 import Gallery from "@/components/Gallery";
 import ContactForm from "@/components/ContactForm";
+import { useEditableImages } from "@/context/ImageContext";
+import { PlayerProfile, AchievementItem } from "@/utils/db";
+
+// Helper wrapper component for static images that enables direct client-side edits
+function EditableImageWrapper({
+  path,
+  children,
+  className = "",
+  label = "Replace Image",
+}: {
+  path: string;
+  children: React.ReactNode;
+  className?: string;
+  label?: string;
+}) {
+  const { isAdmin, getImageSrc, updateImageOverride, resetImageOverride, overrides } = useEditableImages();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const isOverridden = !!overrides[path];
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      try {
+        await updateImageOverride(path, file);
+      } catch (err) {
+        alert("Failed to update image. Please make sure it is a valid image file.");
+      }
+    }
+  };
+
+  return (
+    <div className={`relative group/editable ${className}`}>
+      {children}
+      {isAdmin && (
+        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/editable:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-2 z-30">
+          <div className="flex gap-2">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-3 py-1.5 bg-gold hover:bg-white text-charcoal text-xs font-bold uppercase tracking-wider transition-colors duration-200 shadow-md cursor-pointer pointer-events-auto"
+            >
+              {label}
+            </button>
+            {isOverridden && (
+              <button
+                onClick={() => resetImageOverride(path)}
+                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wider transition-colors duration-200 shadow-md cursor-pointer pointer-events-auto"
+              >
+                Reset
+              </button>
+            )}
+          </div>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Home() {
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const {
+    getImageSrc,
+    players,
+    achievements,
+    isAdmin,
+    login,
+    logout,
+    addOrUpdatePlayerProfile,
+    removePlayerProfile,
+    addOrUpdateAchievement,
+    removeAchievement,
+    resetAllToDefault,
+    loading,
+    openLoginModal,
+  } = useEditableImages();
+
+  const [editingPlayer, setEditingPlayer] = useState<Partial<PlayerProfile> | null>(null);
+  const [playerImageFile, setPlayerImageFile] = useState<File | null>(null);
+
+  const [editingAchievement, setEditingAchievement] = useState<Partial<AchievementItem> | null>(null);
+  const [achievementImageFile, setAchievementImageFile] = useState<File | null>(null);
+
+  const handleAddAchievement = () => {
+    setEditingAchievement({
+      category: "TEAM • UNITY",
+      title: "",
+      description: "",
+      imageSrc: "/images/team_group.jpg",
+    });
+  };
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement | HTMLDivElement>, href: string) => {
     e.preventDefault();
     const targetId = href.substring(1);
     const el = document.getElementById(targetId);
@@ -47,6 +147,17 @@ export default function Home() {
     }
   };
 
+  const handleAddPlayer = () => {
+    setEditingPlayer({
+      name: "",
+      position: "",
+      team: "P.G. Brothers",
+      focus: "",
+      quote: "",
+      imageSrc: "",
+    });
+  };
+
   return (
     <>
       <Navbar />
@@ -59,13 +170,15 @@ export default function Home() {
         >
           {/* Hero background image */}
           <div className="absolute inset-0 z-0">
-            <Image
-              src="/images/team_group.jpg"
-              alt="P.G. Brothers Kabaddi Team"
-              fill
-              priority
-              className="object-cover object-center filter brightness-[0.25] saturate-[0.8] contrast-[1.05]"
-            />
+            <EditableImageWrapper path="/images/team_group.jpg" className="w-full h-full">
+              <Image
+                src={getImageSrc("/images/team_group.jpg")}
+                alt="P.G. Brothers Kabaddi Team"
+                fill
+                priority
+                className="object-cover object-center filter brightness-[0.25] saturate-[0.8] contrast-[1.05]"
+              />
+            </EditableImageWrapper>
             {/* Cinematic overlay */}
             <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a]/70 via-[#0a0a0a]/90 to-charcoal" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_20%,#0a0a0a_100%)]" />
@@ -132,34 +245,6 @@ export default function Home() {
               </a>
             </motion.div>
 
-            {/* Scroll Indicator */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1, duration: 1 }}
-              className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer"
-              onClick={(e) => {
-                e.preventDefault();
-                document.getElementById("statement")?.scrollIntoView({ behavior: "smooth" });
-              }}
-            >
-              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">
-                Scroll to explore
-              </span>
-              <div className="w-5 h-9 border border-gray-600 rounded-full p-1 flex justify-center">
-                <motion.div
-                  animate={{
-                    y: [0, 12, 0],
-                  }}
-                  transition={{
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "easeInOut",
-                  }}
-                  className="w-1 h-1.5 bg-gold rounded-full"
-                />
-              </div>
-            </motion.div>
           </div>
         </section>
 
@@ -249,14 +334,16 @@ export default function Home() {
                   
                   {/* Embedded Authentic image with overlay crop */}
                   <div className="relative w-full h-full overflow-hidden">
-                    <Image
-                      src="/images/grassroots_support.png"
-                      alt="Supporting grassroots Kabaddi"
-                      fill
-                      sizes="(max-w-768px) 100vw, 40vw"
-                      className="object-cover filter contrast-[1.05] brightness-90 saturate-[0.9]"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-transparent" />
+                    <EditableImageWrapper path="/images/grassroots_support.png" className="w-full h-full">
+                      <Image
+                        src={getImageSrc("/images/grassroots_support.png")}
+                        alt="Supporting grassroots Kabaddi"
+                        fill
+                        sizes="(max-w-768px) 100vw, 40vw"
+                        className="object-cover filter contrast-[1.05] brightness-90 saturate-[0.9]"
+                      />
+                    </EditableImageWrapper>
+                    <div className="absolute inset-0 bg-gradient-to-t from-charcoal via-transparent to-transparent pointer-events-none" />
                   </div>
 
                   {/* Corner Accent Box */}
@@ -288,36 +375,42 @@ export default function Home() {
                 title="Player Support"
                 description="Helping Kabaddi players receive encouragement and support as they continue developing their sporting journey."
                 iconName="Heart"
+                onClick={(e: React.MouseEvent<HTMLDivElement>) => handleNavClick(e, "#contact")}
               />
               <SupportCard
                 number="02"
                 title="Team Development"
                 description="Supporting team participation, teamwork and a stronger competitive environment for Kabaddi players."
                 iconName="Users"
+                onClick={(e: React.MouseEvent<HTMLDivElement>) => handleNavClick(e, "#contact")}
               />
               <SupportCard
                 number="03"
                 title="Grassroots Kabaddi"
                 description="Encouraging Kabaddi at the grassroots level and helping young and emerging players stay connected to the sport."
                 iconName="Compass"
+                onClick={(e: React.MouseEvent<HTMLDivElement>) => handleNavClick(e, "#contact")}
               />
               <SupportCard
                 number="04"
                 title="Tournament Participation"
                 description="Supporting players and teams as they participate in local and competitive Kabaddi tournaments."
                 iconName="Trophy"
+                onClick={(e: React.MouseEvent<HTMLDivElement>) => handleNavClick(e, "#contact")}
               />
               <SupportCard
                 number="05"
                 title="Talent Encouragement"
                 description="Recognizing dedication, performance and commitment so that promising players are encouraged to continue pursuing the game."
                 iconName="Award"
+                onClick={(e: React.MouseEvent<HTMLDivElement>) => handleNavClick(e, "#contact")}
               />
               <SupportCard
                 number="06"
                 title="Sporting Opportunities"
                 description="Working toward opportunities that can help players gain exposure, experience and confidence through Kabaddi."
                 iconName="TrendingUp"
+                onClick={(e: React.MouseEvent<HTMLDivElement>) => handleNavClick(e, "#contact")}
               />
             </div>
           </div>
@@ -447,13 +540,15 @@ export default function Home() {
         {/* TEAM SPIRIT SECTION */}
         <section className="relative py-32 md:py-48 bg-charcoal overflow-hidden border-y border-white/5">
           <div className="absolute inset-0 z-0">
-            <Image
-              src="/images/player_lineup.jpg"
-              alt="Kabaddi team spirit"
-              fill
-              className="object-cover object-center filter brightness-[0.2] saturate-[0.7]"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-charcoal via-charcoal/85 to-transparent" />
+            <EditableImageWrapper path="/images/player_lineup.jpg" className="w-full h-full">
+              <Image
+                src={getImageSrc("/images/player_lineup.jpg")}
+                alt="Kabaddi team spirit"
+                fill
+                className="object-cover object-center filter brightness-[0.2] saturate-[0.7]"
+              />
+            </EditableImageWrapper>
+            <div className="absolute inset-0 bg-gradient-to-r from-charcoal via-charcoal/85 to-transparent pointer-events-none" />
           </div>
 
           <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -488,36 +583,34 @@ export default function Home() {
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-              <AchievementCard
-                imageSrc="/images/team_group.jpg"
-                category="TEAM • UNITY"
-                title="Championship Team Group"
-                description="The official team photo of the P.G. Brothers squad, celebrating collective dedication and team spirit."
-              />
-              <AchievementCard
-                imageSrc="/images/cup_presentation.jpg"
-                category="VICTORY • PRESENTATION"
-                title="Championship Award Presentation"
-                description="Honoring the team's outstanding performers and celebrating tournament achievements."
-              />
-              <AchievementCard
-                imageSrc="/images/grassroots_support.png"
-                category="THE JOURNEY • CONTINUES"
-                title="Grassroots Athlete Encouragement"
-                description="Providing shoes and training gear to a talented player, fueling the dreams of the community."
-              />
-              <AchievementCard
-                imageSrc="/images/tournament_group.jpg"
-                category="COMMUNITY • CELEBRATION"
-                title="Grand Tournament Gathering"
-                description="Teams, organizers, and supporters coming together under the banner of sportsmanship."
-              />
-              <AchievementCard
-                imageSrc="/images/player_lineup.jpg"
-                category="COMPETITION • RESPECT"
-                title="Pre-Match Player Lineup"
-                description="Players lining up under field lights, greeting guests and demonstrating respect before the whistle blows."
-              />
+              {achievements.map((item, idx) => (
+                <AchievementCard
+                  key={item.id}
+                  achievement={item}
+                  index={idx}
+                  onEdit={(a) => setEditingAchievement(a)}
+                  onDelete={(id) => {
+                    if (confirm("Are you sure you want to delete this achievement card?")) {
+                      removeAchievement(id);
+                    }
+                  }}
+                />
+              ))}
+
+              {/* Admin Add Achievement Card */}
+              {isAdmin && (
+                <div
+                  onClick={handleAddAchievement}
+                  className="border-2 border-dashed border-gold/20 hover:border-gold/50 flex flex-col items-center justify-center p-6 text-center aspect-[4/3] w-full cursor-pointer group transition-all duration-300 bg-charcoal/20 hover:bg-gold/5"
+                >
+                  <div className="w-12 h-12 rounded-none border border-gold/20 flex items-center justify-center text-gold/40 group-hover:scale-105 group-hover:border-gold/50 group-hover:text-gold transition-all duration-300 mb-3">
+                    <Plus className="w-6 h-6" />
+                  </div>
+                  <span className="text-gold font-oswald font-bold uppercase tracking-wider text-xs">
+                    Add New Moment
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -531,24 +624,24 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
               {/* Trophy Images Showcase */}
               <div className="lg:col-span-6 grid grid-cols-2 gap-4">
-                <div className="relative aspect-[3/5] w-full overflow-hidden border border-gold/10 group">
+                <EditableImageWrapper path="/images/cup_presentation.jpg" className="relative aspect-[3/5] w-full overflow-hidden border border-gold/10 group">
                   <Image
-                    src="/images/cup_presentation.jpg"
+                    src={getImageSrc("/images/cup_presentation.jpg")}
                     alt="Kabaddi Championship Gold Trophy"
                     fill
                     className="object-cover object-center filter grayscale contrast-[1.1] brightness-[0.8] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
                   />
                   <div className="absolute inset-0 bg-shimmer opacity-0 group-hover:opacity-20 animate-shine pointer-events-none" />
-                </div>
-                <div className="relative aspect-[3/5] w-full overflow-hidden border border-gold/10 group mt-8">
+                </EditableImageWrapper>
+                <EditableImageWrapper path="/images/team_group.jpg" className="relative aspect-[3/5] w-full overflow-hidden border border-gold/10 group mt-8">
                   <Image
-                    src="/images/team_group.jpg"
+                    src={getImageSrc("/images/team_group.jpg")}
                     alt="Winner Trophy Display"
                     fill
                     className="object-cover object-center filter grayscale contrast-[1.1] brightness-[0.8] group-hover:grayscale-0 group-hover:scale-105 transition-all duration-700"
                   />
                   <div className="absolute inset-0 bg-shimmer opacity-0 group-hover:opacity-20 animate-shine pointer-events-none" />
-                </div>
+                </EditableImageWrapper>
               </div>
 
               {/* Editorial block */}
@@ -601,9 +694,34 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mt-12">
-              <PlayerCard index={0} />
-              <PlayerCard index={1} />
-              <PlayerCard index={2} />
+              {players.map((player, idx) => (
+                <PlayerCard
+                  key={player.id}
+                  player={player}
+                  index={idx}
+                  onEdit={(p) => setEditingPlayer(p)}
+                  onDelete={(id) => {
+                    if (confirm("Are you sure you want to delete this player profile?")) {
+                      removePlayerProfile(id);
+                    }
+                  }}
+                />
+              ))}
+
+              {/* Admin Add Player Card */}
+              {isAdmin && (
+                <div
+                  onClick={handleAddPlayer}
+                  className="border-2 border-dashed border-gold/20 hover:border-gold/50 flex flex-col items-center justify-center p-8 text-center min-h-[400px] cursor-pointer group transition-all duration-300 bg-charcoal/20 hover:bg-gold/5"
+                >
+                  <div className="w-16 h-16 rounded-none border border-gold/20 flex items-center justify-center text-gold/40 group-hover:scale-105 group-hover:border-gold/50 group-hover:text-gold transition-all duration-300 mb-4">
+                    <Plus className="w-8 h-8" />
+                  </div>
+                  <span className="text-gold font-oswald font-bold uppercase tracking-wider text-xs">
+                    Add New Player Profile
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </section>
@@ -654,12 +772,14 @@ export default function Home() {
         <section id="support-cta" className="relative py-28 md:py-36 bg-charcoal border-y border-white/5 overflow-hidden">
           {/* Background image overlay */}
           <div className="absolute inset-0 z-0 opacity-15">
-            <Image
-              src="/images/tournament_group.jpg"
-              alt="Kabaddi background"
-              fill
-              className="object-cover"
-            />
+            <EditableImageWrapper path="/images/tournament_group.jpg" className="w-full h-full">
+              <Image
+                src={getImageSrc("/images/tournament_group.jpg")}
+                alt="Kabaddi background"
+                fill
+                className="object-cover"
+              />
+            </EditableImageWrapper>
           </div>
           {/* Solid color gradient layer */}
           <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-charcoal/95 to-[#0a0a0a] z-0" />
@@ -879,6 +999,277 @@ export default function Home() {
       </main>
 
       <Footer />
+
+      {/* FLOATING ADMIN CONTROLS */}
+      {isAdmin && (
+        <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-2.5 items-end">
+          <button
+            onClick={() => {
+              if (confirm("This will clear all uploaded images, customized players, and reset the website to its original factory state. Are you sure?")) {
+                resetAllToDefault();
+              }
+            }}
+            className="px-4 py-2 bg-charcoal border border-red-900/50 hover:border-red-500 text-red-400 hover:text-white text-[10px] font-bold uppercase tracking-wider transition-all duration-300 shadow-2xl flex items-center gap-2 cursor-pointer"
+            title="Reset Entire Site to Factory Seed Defaults"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            Reset Defaults
+          </button>
+          <button
+            onClick={logout}
+            className="px-4 py-2 bg-charcoal border border-white/10 hover:border-gold text-white hover:text-charcoal hover:bg-gold text-[10px] font-bold uppercase tracking-wider transition-all duration-300 shadow-2xl flex items-center gap-2 cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            Exit Edit Mode
+          </button>
+        </div>
+      )}
+
+      {/* PLAYER EDIT / ADD MODAL */}
+      {editingPlayer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+          <div className="w-full max-w-lg bg-charcoal border border-gold/30 p-8 my-8 relative shadow-2xl">
+            <button
+              onClick={() => {
+                setEditingPlayer(null);
+                setPlayerImageFile(null);
+              }}
+              className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-2xl font-oswald font-bold text-white uppercase tracking-wider mb-6">
+              {editingPlayer.id ? "Edit Player Profile" : "Add Player Profile"}
+            </h3>
+            
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                const profile: PlayerProfile = {
+                  id: editingPlayer.id || `player_${Date.now()}`,
+                  name: editingPlayer.name || "Unnamed Player",
+                  position: editingPlayer.position || "Raider",
+                  team: editingPlayer.team || "P.G. Brothers",
+                  focus: editingPlayer.focus || "Grassroots Development",
+                  quote: editingPlayer.quote || "",
+                  imageSrc: editingPlayer.imageSrc || "",
+                };
+                await addOrUpdatePlayerProfile(profile, playerImageFile);
+                setEditingPlayer(null);
+                setPlayerImageFile(null);
+              } catch (err) {
+                alert("Error saving player profile");
+              }
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Player Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingPlayer.name || ""}
+                    onChange={(e) => setEditingPlayer({...editingPlayer, name: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                      Position
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editingPlayer.position || ""}
+                      onChange={(e) => setEditingPlayer({...editingPlayer, position: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                      Team Name
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editingPlayer.team || ""}
+                      onChange={(e) => setEditingPlayer({...editingPlayer, team: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Focus / Experience
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingPlayer.focus || ""}
+                    onChange={(e) => setEditingPlayer({...editingPlayer, focus: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Quote / Bio
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={editingPlayer.quote || ""}
+                    onChange={(e) => setEditingPlayer({...editingPlayer, quote: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Player Image
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setPlayerImageFile(e.target.files?.[0] || null)}
+                    className="text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-none file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-white/10 file:text-white hover:file:bg-white/20 file:cursor-pointer"
+                  />
+                  {editingPlayer.imageSrc && !playerImageFile && (
+                    <p className="text-[10px] text-gray-500 mt-1">Has profile picture. Upload a new one to replace.</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="mt-8 flex gap-4">
+                <button
+                  type="submit"
+                  className="flex-grow py-3 bg-gold text-charcoal font-bold uppercase tracking-widest hover:bg-white transition-colors duration-300 text-xs cursor-pointer"
+                >
+                  Save Profile
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingPlayer(null);
+                    setPlayerImageFile(null);
+                  }}
+                  className="px-6 py-3 bg-transparent hover:bg-white/5 text-white border border-white/10 hover:border-white font-bold uppercase tracking-widest transition-colors duration-300 text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* MOMENT EDIT / ADD MODAL */}
+      {editingAchievement && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
+          <div className="w-full max-w-lg bg-charcoal border border-gold/30 p-8 my-8 relative shadow-2xl">
+            <button
+              onClick={() => {
+                setEditingAchievement(null);
+                setAchievementImageFile(null);
+              }}
+              className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-2xl font-oswald font-bold text-white uppercase tracking-wider mb-6">
+              {editingAchievement.id ? "Edit Moment Details" : "Add Moment"}
+            </h3>
+            
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                const item: AchievementItem = {
+                  id: editingAchievement.id || `moment_${Date.now()}`,
+                  imageSrc: editingAchievement.imageSrc || "/images/team_group.jpg",
+                  category: editingAchievement.category || "TEAM • UNITY",
+                  title: editingAchievement.title || "Championship Moment",
+                  description: editingAchievement.description || "",
+                };
+                await addOrUpdateAchievement(item, achievementImageFile);
+                setEditingAchievement(null);
+                setAchievementImageFile(null);
+              } catch (err) {
+                alert("Error saving moment details");
+              }
+            }}>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Moment Title
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingAchievement.title || ""}
+                    onChange={(e) => setEditingAchievement({...editingAchievement, title: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Category Tag / Subtitle
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingAchievement.category || ""}
+                    onChange={(e) => setEditingAchievement({...editingAchievement, category: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Description
+                  </label>
+                  <textarea
+                    rows={4}
+                    required
+                    value={editingAchievement.description || ""}
+                    onChange={(e) => setEditingAchievement({...editingAchievement, description: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors resize-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Upload Photo
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setAchievementImageFile(e.target.files?.[0] || null)}
+                    className="text-xs text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-none file:border-0 file:text-[10px] file:font-bold file:uppercase file:bg-white/10 file:text-white hover:file:bg-white/20 file:cursor-pointer"
+                  />
+                  {editingAchievement.imageSrc && !achievementImageFile && (
+                    <p className="text-[10px] text-gray-500 mt-1">Has photo. Upload a new file to replace.</p>
+                  )}
+                </div>
+              </div>
+              
+              <div className="mt-8 flex gap-4">
+                <button
+                  type="submit"
+                  className="flex-grow py-3 bg-gold text-charcoal font-bold uppercase tracking-widest hover:bg-white transition-colors duration-300 text-xs cursor-pointer"
+                >
+                  Save Moment
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingAchievement(null);
+                    setAchievementImageFile(null);
+                  }}
+                  className="px-6 py-3 bg-transparent hover:bg-white/5 text-white border border-white/10 hover:border-white font-bold uppercase tracking-widest transition-colors duration-300 text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </>
   );
 }

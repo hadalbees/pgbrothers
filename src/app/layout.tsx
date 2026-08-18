@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Oswald, Inter } from "next/font/google";
 import "./globals.css";
+import { EditableImageProvider } from "@/context/ImageContext";
 
 const oswald = Oswald({
   variable: "--font-oswald",
@@ -54,7 +55,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       style={{ colorScheme: "dark" }}
     >
       <body className="min-h-full flex flex-col bg-[#0a0a0a] text-[#fafaf9] font-sans selection:bg-[#d4af37] selection:text-[#0a0a0a]">
-        {children}
+        <EditableImageProvider>
+          {children}
+        </EditableImageProvider>
       </body>
     </html>
   );
