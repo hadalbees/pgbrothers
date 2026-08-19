@@ -34,68 +34,10 @@ import AchievementCard from "@/components/AchievementCard";
 import Gallery from "@/components/Gallery";
 import ContactForm from "@/components/ContactForm";
 import { useEditableImages } from "@/context/ImageContext";
-import { PlayerProfile, AchievementItem } from "@/utils/db";
+import { PlayerProfile, AchievementItem, ClubDetails } from "@/utils/db";
+import EditableImageWrapper from "@/components/EditableImageWrapper";
 
-// Helper wrapper component for static images that enables direct client-side edits
-function EditableImageWrapper({
-  path,
-  children,
-  className = "",
-  label = "Replace Image",
-}: {
-  path: string;
-  children: React.ReactNode;
-  className?: string;
-  label?: string;
-}) {
-  const { isAdmin, getImageSrc, updateImageOverride, resetImageOverride, overrides } = useEditableImages();
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const isOverridden = !!overrides[path];
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      try {
-        await updateImageOverride(path, file);
-      } catch (err) {
-        alert("Failed to update image. Please make sure it is a valid image file.");
-      }
-    }
-  };
-
-  return (
-    <div className={`relative group/editable ${className}`}>
-      {children}
-      {isAdmin && (
-        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover/editable:opacity-100 transition-opacity duration-300 flex flex-col items-center justify-center gap-2 z-30">
-          <div className="flex gap-2">
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="px-3 py-1.5 bg-gold hover:bg-white text-charcoal text-xs font-bold uppercase tracking-wider transition-colors duration-200 shadow-md cursor-pointer pointer-events-auto"
-            >
-              {label}
-            </button>
-            {isOverridden && (
-              <button
-                onClick={() => resetImageOverride(path)}
-                className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold uppercase tracking-wider transition-colors duration-200 shadow-md cursor-pointer pointer-events-auto"
-              >
-                Reset
-              </button>
-            )}
-          </div>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept="image/*"
-            className="hidden"
-          />
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function Home() {
   const {
@@ -112,6 +54,8 @@ export default function Home() {
     resetAllToDefault,
     loading,
     openLoginModal,
+    clubDetails,
+    updateClubDetails,
   } = useEditableImages();
 
   const [editingPlayer, setEditingPlayer] = useState<Partial<PlayerProfile> | null>(null);
@@ -119,6 +63,14 @@ export default function Home() {
 
   const [editingAchievement, setEditingAchievement] = useState<Partial<AchievementItem> | null>(null);
   const [achievementImageFile, setAchievementImageFile] = useState<File | null>(null);
+
+  const [isEditingClubDetails, setIsEditingClubDetails] = useState(false);
+  const [editingClubDetailsForm, setEditingClubDetailsForm] = useState<ClubDetails>({} as ClubDetails);
+
+  const handleEditClubDetails = () => {
+    setEditingClubDetailsForm({ ...clubDetails });
+    setIsEditingClubDetails(true);
+  };
 
   const handleAddAchievement = () => {
     setEditingAchievement({
@@ -353,6 +305,68 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* EXECUTIVE COMMITTEE SECTION */}
+        <section id="committee" className="py-20 bg-charcoal relative border-b border-white/5">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(6,78,59,0.15),transparent_60%)] pointer-events-none" />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-12">
+              <div>
+                <SectionHeading
+                  badge="Leadership"
+                  title="Executive Committee"
+                  subtitle="The dedicated leaders who guide the organization, support players, and manage club operations."
+                />
+              </div>
+              {isAdmin && (
+                <button
+                  onClick={handleEditClubDetails}
+                  className="mt-4 md:mt-0 px-4 py-2 bg-gold hover:bg-white text-charcoal text-xs font-bold uppercase tracking-widest transition-colors duration-300 shadow-md flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Lock className="w-3.5 h-3.5" /> Edit Club Details
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6 mt-12">
+              {[
+                { role: "President", name: clubDetails.president },
+                { role: "Vice President", name: clubDetails.vicePresident },
+                { role: "Secretary", name: clubDetails.secretary },
+                { role: "Joint Secretary", name: clubDetails.joinSecretary },
+                { role: "Treasurer", name: clubDetails.treasurer },
+              ].map((officer, idx) => (
+                <motion.div
+                  key={officer.role}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: idx * 0.05 }}
+                  className="p-6 border border-white/5 bg-[#121212]/40 text-center relative flex flex-col justify-between group hover:border-gold/25 transition-all duration-300 h-full"
+                >
+                  <div className="absolute top-0 left-0 w-full h-[2px] bg-gradient-to-r from-transparent via-gold/10 to-transparent group-hover:via-gold/50 transition-all duration-500" />
+                  
+                  <div className="absolute right-4 bottom-4 w-12 h-12 border border-white/5 rounded-full flex items-center justify-center text-white/[0.02] group-hover:text-gold/[0.04] transition-colors duration-300 font-oswald font-black select-none pointer-events-none">
+                    PGB
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-bold text-gold uppercase tracking-[0.2em] mb-4 block">
+                      {officer.role}
+                    </span>
+                    <h4 className="text-lg font-oswald font-bold text-white uppercase tracking-wide leading-tight group-hover:text-gold transition-colors duration-300">
+                      {officer.name || "TBA"}
+                    </h4>
+                  </div>
+                  
+                  <div className="mt-6 text-[9px] uppercase tracking-widest text-gray-500 font-bold">
+                    Official Committee Member
+                  </div>
+                </motion.div>
+              ))}
             </div>
           </div>
         </section>
@@ -973,18 +987,70 @@ export default function Home() {
                     subtitle="Whether you are a player, team, supporter, organization or potential partner, we would love to hear from you."
                   />
 
-                  <div className="space-y-6 text-gray-400 text-sm font-light mt-8">
-                    <p>
-                      Are you an athlete needing training support or shoe equipment? Are you a captain/coach representing a local Kabaddi squad looking to participate in upcoming competitive games? Or a community supporter looking to co-sponsor grassroots events?
-                    </p>
-                    <p>
-                      Fill out the form and submit your request. We will review your message and reply as soon as possible.
-                    </p>
+                  {/* Directory Info Card */}
+                  <div className="mt-8 p-6 bg-[#161616]/40 border border-white/5 hover:border-gold/10 transition-colors space-y-5">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-white border-b border-white/5 pb-3 flex items-center justify-between">
+                      <span>Official Club Directory</span>
+                      {isAdmin && (
+                        <button
+                          onClick={handleEditClubDetails}
+                          className="text-[9px] text-gold hover:text-white uppercase font-bold tracking-widest flex items-center gap-1 cursor-pointer focus:outline-none"
+                        >
+                          [ Edit ]
+                        </button>
+                      )}
+                    </h4>
+                    
+                    {clubDetails.affiliation && (
+                      <div className="flex gap-4 items-start text-xs leading-relaxed font-light">
+                        <div className="w-8 h-8 flex-shrink-0 bg-gold/5 border border-gold/10 flex items-center justify-center text-gold">
+                          <Award className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="block text-[9px] uppercase tracking-widest text-gray-500 font-bold mb-0.5">Affiliation</span>
+                          <span className="text-gray-300 font-medium">{clubDetails.affiliation}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-4 items-start text-xs leading-relaxed font-light">
+                      <div className="w-8 h-8 flex-shrink-0 bg-gold/5 border border-gold/10 flex items-center justify-center text-gold">
+                        <Compass className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="block text-[9px] uppercase tracking-widest text-gray-500 font-bold mb-0.5">Club Headquarters</span>
+                        <span className="text-gray-300">{clubDetails.address}</span>
+                      </div>
+                    </div>
+
+                    {clubDetails.phone && (
+                      <div className="flex gap-4 items-start text-xs leading-relaxed font-light">
+                        <div className="w-8 h-8 flex-shrink-0 bg-gold/5 border border-gold/10 flex items-center justify-center text-gold">
+                          <Zap className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="block text-[9px] uppercase tracking-widest text-gray-500 font-bold mb-0.5">Contact Call</span>
+                          <a href={`tel:${clubDetails.phone}`} className="text-gray-300 hover:text-gold font-semibold transition-colors">{clubDetails.phone}</a>
+                        </div>
+                      </div>
+                    )}
+
+                    {clubDetails.email && (
+                      <div className="flex gap-4 items-start text-xs leading-relaxed font-light">
+                        <div className="w-8 h-8 flex-shrink-0 bg-gold/5 border border-gold/10 flex items-center justify-center text-gold">
+                          <Mail className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="block text-[9px] uppercase tracking-widest text-gray-500 font-bold mb-0.5">Email Directory</span>
+                          <a href={`mailto:${clubDetails.email}`} className="text-gray-300 hover:text-gold font-semibold transition-colors">{clubDetails.email}</a>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Important alert block */}
-                <div className="mt-8 p-4 bg-forest-medium/10 border border-gold/15 text-xs text-gold/80 leading-relaxed font-light">
+                <div className="mt-6 p-4 bg-forest-medium/10 border border-gold/15 text-xs text-gold/80 leading-relaxed font-light">
                   <strong>Important Notice:</strong> PGBrothers.org works directly with sporting initiatives. All submissions are evaluated individually. We are dedicated to providing support directly to players and grassroots structures.
                 </div>
               </div>
@@ -1260,6 +1326,186 @@ export default function Home() {
                   onClick={() => {
                     setEditingAchievement(null);
                     setAchievementImageFile(null);
+                  }}
+                  className="px-6 py-3 bg-transparent hover:bg-white/5 text-white border border-white/10 hover:border-white font-bold uppercase tracking-widest transition-colors duration-300 text-xs cursor-pointer"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CLUB DETAILS EDIT MODAL */}
+      {isEditingClubDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm overflow-y-auto">
+          <div className="w-full max-w-lg bg-charcoal border border-gold/30 p-8 my-8 relative shadow-2xl">
+            <button
+              onClick={() => {
+                setIsEditingClubDetails(false);
+              }}
+              className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-2xl font-oswald font-bold text-white uppercase tracking-wider mb-6">
+              Edit Club Information
+            </h3>
+            
+            <form onSubmit={async (e) => {
+              e.preventDefault();
+              try {
+                await updateClubDetails(editingClubDetailsForm);
+                setIsEditingClubDetails(false);
+              } catch (err) {
+                alert("Error saving club details");
+              }
+            }}>
+              <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar text-left">
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Club/Org Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingClubDetailsForm.name || ""}
+                    onChange={(e) => setEditingClubDetailsForm({...editingClubDetailsForm, name: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Association Affiliation
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={editingClubDetailsForm.affiliation || ""}
+                    onChange={(e) => setEditingClubDetailsForm({...editingClubDetailsForm, affiliation: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                    Headquarters Address
+                  </label>
+                  <textarea
+                    rows={2}
+                    required
+                    value={editingClubDetailsForm.address || ""}
+                    onChange={(e) => setEditingClubDetailsForm({...editingClubDetailsForm, address: e.target.value})}
+                    className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors resize-none"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                      Phone Number
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editingClubDetailsForm.phone || ""}
+                      onChange={(e) => setEditingClubDetailsForm({...editingClubDetailsForm, phone: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={editingClubDetailsForm.email || ""}
+                      onChange={(e) => setEditingClubDetailsForm({...editingClubDetailsForm, email: e.target.value})}
+                      className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                    />
+                  </div>
+                </div>
+
+                <div className="border-t border-white/5 pt-4">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-white mb-4">
+                    Executive Officers
+                  </h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                        President
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editingClubDetailsForm.president || ""}
+                        onChange={(e) => setEditingClubDetailsForm({...editingClubDetailsForm, president: e.target.value})}
+                        className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                        Vice President
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editingClubDetailsForm.vicePresident || ""}
+                        onChange={(e) => setEditingClubDetailsForm({...editingClubDetailsForm, vicePresident: e.target.value})}
+                        className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                        Secretary
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editingClubDetailsForm.secretary || ""}
+                        onChange={(e) => setEditingClubDetailsForm({...editingClubDetailsForm, secretary: e.target.value})}
+                        className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                        Joint Secretary
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editingClubDetailsForm.joinSecretary || ""}
+                        onChange={(e) => setEditingClubDetailsForm({...editingClubDetailsForm, joinSecretary: e.target.value})}
+                        className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[9px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
+                        Treasurer
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={editingClubDetailsForm.treasurer || ""}
+                        onChange={(e) => setEditingClubDetailsForm({...editingClubDetailsForm, treasurer: e.target.value})}
+                        className="w-full px-4 py-2.5 bg-[#0f0f0f] border border-white/10 focus:border-gold text-white text-xs rounded-none focus:outline-none transition-colors"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-8 flex gap-4 border-t border-white/5 pt-4">
+                <button
+                  type="submit"
+                  className="flex-grow py-3 bg-gold text-charcoal font-bold uppercase tracking-widest hover:bg-white transition-colors duration-300 text-xs cursor-pointer"
+                >
+                  Save Information
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditingClubDetails(false);
                   }}
                   className="px-6 py-3 bg-transparent hover:bg-white/5 text-white border border-white/10 hover:border-white font-bold uppercase tracking-widest transition-colors duration-300 text-xs cursor-pointer"
                 >

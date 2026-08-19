@@ -19,6 +19,10 @@ import {
   GalleryImage,
   PlayerProfile,
   AchievementItem,
+  ClubDetails,
+  getClubDetails,
+  saveClubDetails,
+  defaultClubDetails,
 } from "@/utils/db";
 
 // Configurable static admin passcode
@@ -43,6 +47,8 @@ interface ImageContextType {
   removeAchievement: (id: string) => Promise<void>;
   resetAllToDefault: () => Promise<void>;
   openLoginModal: () => void;
+  clubDetails: ClubDetails;
+  updateClubDetails: (details: ClubDetails) => Promise<void>;
 }
 
 const ImageContext = createContext<ImageContextType | undefined>(undefined);
@@ -95,6 +101,7 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
   const [players, setPlayers] = useState<PlayerProfile[]>([]);
   const [achievements, setAchievements] = useState<AchievementItem[]>([]);
   const [overrides, setOverrides] = useState<Record<string, string>>({});
+  const [clubDetails, setClubDetails] = useState<ClubDetails>(defaultClubDetails);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -112,11 +119,13 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
         const loadedPlayers = await getPlayers();
         const loadedAchievements = await getAchievements();
         const loadedOverrides = await getOverrides();
-
+        const loadedClubDetails = await getClubDetails();
+ 
         setGallery(loadedGallery);
         setPlayers(loadedPlayers);
         setAchievements(loadedAchievements);
         setOverrides(loadedOverrides);
+        setClubDetails(loadedClubDetails);
 
         // Check if admin is logged in (session storage)
         const adminSession = sessionStorage.getItem("pgb_admin_session");
@@ -274,6 +283,17 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
     }
   };
 
+  // Update club details
+  const updateClubDetails = async (details: ClubDetails) => {
+    try {
+      await saveClubDetails(details);
+      setClubDetails(details);
+    } catch (err) {
+      console.error("Failed to update club details", err);
+      throw err;
+    }
+  };
+
   // Reset entire database back to default factory seed state
   const resetAllToDefault = async () => {
     try {
@@ -283,11 +303,13 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
       const loadedPlayers = await getPlayers();
       const loadedAchievements = await getAchievements();
       const loadedOverrides = await getOverrides();
-
+      const loadedClubDetails = await getClubDetails();
+ 
       setGallery(loadedGallery);
       setPlayers(loadedPlayers);
       setAchievements(loadedAchievements);
       setOverrides(loadedOverrides);
+      setClubDetails(loadedClubDetails);
     } catch (err) {
       console.error("Failed to reset database", err);
     } finally {
@@ -316,6 +338,8 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
         removeAchievement,
         resetAllToDefault,
         openLoginModal,
+        clubDetails,
+        updateClubDetails,
       }}
     >
       {children}

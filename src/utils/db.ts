@@ -28,6 +28,32 @@ export interface ImageOverride {
   base64: string;
 }
 
+export interface ClubDetails {
+  name: string;
+  affiliation: string;
+  address: string;
+  phone: string;
+  email: string;
+  president: string;
+  vicePresident: string;
+  secretary: string;
+  joinSecretary: string;
+  treasurer: string;
+}
+
+export const defaultClubDetails: ClubDetails = {
+  name: "PG Brothers Kabaddi Club",
+  affiliation: "Affiliated to Chennai District Amateur Kabaddi Association",
+  address: "1 cross saibaba colony, Virugambakkam, Chennai - 600092",
+  phone: "94450 12641",
+  email: "pgbrotherskabadi@gmail.com",
+  president: "S.Karthikeyan",
+  vicePresident: "V.Sathish Kumar Iyappan",
+  secretary: "S.Maran",
+  joinSecretary: "R.Nirmal Raj Mohan",
+  treasurer: "V.Ranjith Kumar",
+};
+
 const DB_NAME = "pgbrothers_db";
 const DB_VERSION = 2; // Incremented to support achievements store upgrade
 
@@ -394,5 +420,40 @@ export async function resetDB(): Promise<void> {
       }
     };
     transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+// Club Details DB Access
+export async function getClubDetails(): Promise<ClubDetails> {
+  const db = await openDB();
+  return new Promise((resolve) => {
+    const transaction = db.transaction("overrides", "readonly");
+    const store = transaction.objectStore("overrides");
+    const request = store.get("club_details");
+    request.onsuccess = () => {
+      if (request.result && request.result.base64) {
+        try {
+          resolve(JSON.parse(request.result.base64));
+          return;
+        } catch (e) {
+          console.error("Failed to parse club details", e);
+        }
+      }
+      resolve(defaultClubDetails);
+    };
+    request.onerror = () => {
+      resolve(defaultClubDetails);
+    };
+  });
+}
+
+export async function saveClubDetails(details: ClubDetails): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction("overrides", "readwrite");
+    const store = transaction.objectStore("overrides");
+    const request = store.put({ path: "club_details", base64: JSON.stringify(details) });
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
   });
 }

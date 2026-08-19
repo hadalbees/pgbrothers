@@ -1,9 +1,11 @@
 import React from "react";
+import Image from "next/image";
 import { ArrowUp } from "lucide-react";
 import { useEditableImages } from "@/context/ImageContext";
+import EditableImageWrapper from "@/components/EditableImageWrapper";
 
 export default function Footer() {
-  const { isAdmin, logout, openLoginModal } = useEditableImages();
+  const { isAdmin, logout, openLoginModal, clubDetails, getImageSrc } = useEditableImages();
 
   const scrollToTop = () => {
     window.scrollTo({
@@ -37,15 +39,61 @@ export default function Footer() {
           {/* Logo & Tagline */}
           <div className="md:col-span-6 flex flex-col justify-between">
             <div>
-              <span className="text-3xl font-oswald font-black tracking-wider text-white">
-                P.G. <span className="text-gold">BROTHERS</span>
-              </span>
+              <div className="flex items-center gap-3">
+                <EditableImageWrapper path="/images/logo.png" label="Replace Logo" className="w-12 h-12 flex-shrink-0">
+                  <Image
+                    src={getImageSrc("/images/logo.png")}
+                    alt="P.G. Brothers Logo"
+                    width={48}
+                    height={48}
+                    unoptimized
+                    className="rounded-full border border-gold/20 object-cover w-12 h-12"
+                  />
+                </EditableImageWrapper>
+                <div className="flex flex-col text-left">
+                  <span className="text-2xl font-oswald font-black tracking-wider text-white leading-none">
+                    P.G. <span className="text-gold">BROTHERS</span>
+                  </span>
+                  <span className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mt-1">
+                    {clubDetails.name || "Kabaddi Club"}
+                  </span>
+                </div>
+              </div>
+              
               <p className="mt-4 max-w-sm text-gray-400 font-light leading-relaxed">
                 Supporting Players. Building Teams. Growing Kabaddi. Dedicated to grassroots development, talent encouragement, and sporting opportunities.
               </p>
+
+              {clubDetails.affiliation && (
+                <p className="mt-2 text-xs font-semibold text-gold/85 font-oswald uppercase tracking-wider">
+                  {clubDetails.affiliation}
+                </p>
+              )}
+            </div>
+
+            {/* Address & Contact info in Footer */}
+            <div className="mt-6 space-y-2 text-xs text-gray-400 font-light">
+              <p className="flex items-start gap-2">
+                <span className="text-gold font-semibold font-oswald uppercase">Address:</span>
+                <span>{clubDetails.address}</span>
+              </p>
+              <div className="flex flex-wrap gap-x-6 gap-y-1">
+                {clubDetails.phone && (
+                  <p className="flex items-center gap-2">
+                    <span className="text-gold font-semibold font-oswald uppercase">Phone:</span>
+                    <a href={`tel:${clubDetails.phone}`} className="hover:text-gold transition-colors">{clubDetails.phone}</a>
+                  </p>
+                )}
+                {clubDetails.email && (
+                  <p className="flex items-center gap-2">
+                    <span className="text-gold font-semibold font-oswald uppercase">Email:</span>
+                    <a href={`mailto:${clubDetails.email}`} className="hover:text-gold transition-colors">{clubDetails.email}</a>
+                  </p>
+                )}
+              </div>
             </div>
             
-            <div className="mt-6 md:mt-0 text-xs text-gray-500 uppercase tracking-widest font-semibold">
+            <div className="mt-6 text-xs text-gray-500 uppercase tracking-widest font-semibold">
               Official Website: <span className="text-white">PGBrothers.org</span>
             </div>
           </div>

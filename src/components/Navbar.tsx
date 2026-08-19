@@ -1,8 +1,11 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Image from "next/image";
 import { Menu, X, ArrowUpRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useEditableImages } from "@/context/ImageContext";
+import EditableImageWrapper from "@/components/EditableImageWrapper";
 
 const navLinks = [
   { name: "Home", href: "#home" },
@@ -18,6 +21,7 @@ export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("home");
+  const { getImageSrc } = useEditableImages();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -78,11 +82,26 @@ export default function Navbar() {
           <a
             href="#home"
             onClick={(e) => handleNavClick(e, "#home")}
-            className="flex items-center gap-2 group focus:outline-none"
+            className="flex items-center gap-3 group focus:outline-none"
           >
-            <span className="text-2xl font-oswald font-black tracking-wider text-white group-hover:text-gold transition-colors">
-              P.G. <span className="text-gold group-hover:text-white transition-colors">BROTHERS</span>
-            </span>
+            <EditableImageWrapper path="/images/logo.png" label="Replace Logo" className="w-10 h-10 flex-shrink-0">
+              <Image
+                src={getImageSrc("/images/logo.png")}
+                alt="P.G. Brothers Logo"
+                width={40}
+                height={40}
+                unoptimized
+                className="rounded-full border border-gold/20 object-cover w-10 h-10"
+              />
+            </EditableImageWrapper>
+            <div className="flex flex-col text-left">
+              <span className="text-xl sm:text-2xl font-oswald font-black tracking-wider text-white group-hover:text-gold transition-colors leading-none">
+                P.G. <span className="text-gold group-hover:text-white transition-colors">BROTHERS</span>
+              </span>
+              <span className="text-[9px] uppercase tracking-widest text-gray-400 font-bold mt-0.5">
+                Kabaddi Club
+              </span>
+            </div>
           </a>
 
           {/* Desktop Navigation */}
