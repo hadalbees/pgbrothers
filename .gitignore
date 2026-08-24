@@ -6,6 +6,8 @@ node_modules/
 .env.production.local
 
 .next/
+.open-next/
+.wrangler/
 out/
 dist/
 build/
