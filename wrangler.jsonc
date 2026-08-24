@@ -10,6 +10,12 @@
     "binding": "ASSETS",
     "directory": ".open-next/assets"
   },
+  "r2_buckets": [
+    {
+      "binding": "PGBROTHERS_BUCKET",
+      "bucket_name": "pgbrothers-db"
+    }
+  ],
   "observability": {
     "enabled": true
   }

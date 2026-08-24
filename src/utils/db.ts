@@ -57,7 +57,7 @@ export const defaultClubDetails: ClubDetails = {
 const DB_NAME = "pgbrothers_db";
 const DB_VERSION = 2; // Incremented to support achievements store upgrade
 
-const defaultGallery: GalleryImage[] = [
+export const defaultGallery: GalleryImage[] = [
   {
     src: "/images/team_group.jpg",
     title: "TEAM • UNITY",
@@ -90,7 +90,7 @@ const defaultGallery: GalleryImage[] = [
   },
 ];
 
-const defaultPlayers: PlayerProfile[] = [
+export const defaultPlayers: PlayerProfile[] = [
   {
     id: "player_1",
     name: "Vikram Singh",
@@ -120,7 +120,7 @@ const defaultPlayers: PlayerProfile[] = [
   },
 ];
 
-const defaultAchievements: AchievementItem[] = [
+export const defaultAchievements: AchievementItem[] = [
   {
     id: "moment_1",
     imageSrc: "/images/team_group.jpg",

@@ -110,9 +110,81 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
 
   const openLoginModal = () => setShowLoginModal(true);
 
+  // Helper to save current local state to Cloudflare R2
+  const syncToCloudflare = async (updates: {
+    gallery?: GalleryImage[];
+    players?: PlayerProfile[];
+    achievements?: AchievementItem[];
+    overrides?: Record<string, string>;
+    clubDetails?: ClubDetails;
+  }) => {
+    try {
+      const payload = {
+        gallery: updates.gallery !== undefined ? updates.gallery : gallery,
+        players: updates.players !== undefined ? updates.players : players,
+        achievements: updates.achievements !== undefined ? updates.achievements : achievements,
+        overrides: updates.overrides !== undefined ? updates.overrides : overrides,
+        clubDetails: updates.clubDetails !== undefined ? updates.clubDetails : clubDetails,
+      };
+
+      const res = await fetch("/api/db", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-passcode": ADMIN_PASSCODE,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        console.error("Failed to sync database to Cloudflare R2:", await res.text());
+      }
+    } catch (err) {
+      console.error("Network error when syncing to Cloudflare R2:", err);
+    }
+  };
+
   // Load database content on mount
   useEffect(() => {
     async function initAndLoad() {
+      try {
+        const res = await fetch("/api/db");
+        if (res.ok) {
+          const data = (await res.json()) as any;
+          if (data && data.gallery && data.players && data.achievements && data.clubDetails) {
+            setGallery(data.gallery);
+            setPlayers(data.players);
+            setAchievements(data.achievements);
+            setOverrides(data.overrides || {});
+            setClubDetails(data.clubDetails);
+
+            // Sync locally to IndexedDB as background cache
+            seedDBIfEmpty().then(async () => {
+              await saveGallery(data.gallery);
+              // Store all objects in IndexedDB to keep them local too
+              for (const player of data.players) {
+                await savePlayer(player);
+              }
+              for (const ach of data.achievements) {
+                await saveAchievement(ach);
+              }
+              for (const [path, base64] of Object.entries(data.overrides || {})) {
+                await saveOverride(path, base64 as string);
+              }
+              await saveClubDetails(data.clubDetails);
+            }).catch(e => console.error("Local DB sync error:", e));
+
+            const adminSession = sessionStorage.getItem("pgb_admin_session");
+            setIsAdmin(adminSession === "true");
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Cloudflare R2 fetch failed, falling back to local IndexedDB:", err);
+      }
+
+      // Fallback: load from local IndexedDB
       try {
         await seedDBIfEmpty();
         const loadedGallery = await getGallery();
@@ -127,7 +199,6 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
         setOverrides(loadedOverrides);
         setClubDetails(loadedClubDetails);
 
-        // Check if admin is logged in (session storage)
         const adminSession = sessionStorage.getItem("pgb_admin_session");
         setIsAdmin(adminSession === "true");
       } catch (err) {
@@ -148,7 +219,7 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
     return () => {
       window.removeEventListener("pageshow", handlePageShow);
     };
-  }, []);
+  }, [gallery, players, achievements, overrides, clubDetails]);
 
   // Login handler
   const login = (passcode: string): boolean => {
@@ -176,10 +247,12 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
     try {
       const compressedBase64 = await compressImage(file);
       await saveOverride(path, compressedBase64);
-      setOverrides((prev) => ({
-        ...prev,
+      const newOverrides = {
+        ...overrides,
         [path]: compressedBase64,
-      }));
+      };
+      setOverrides(newOverrides);
+      await syncToCloudflare({ overrides: newOverrides });
     } catch (err) {
       console.error(`Failed to override image path: ${path}`, err);
       throw err;
@@ -190,11 +263,10 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
   const resetImageOverride = async (path: string) => {
     try {
       await clearOverride(path);
-      setOverrides((prev) => {
-        const copy = { ...prev };
-        delete copy[path];
-        return copy;
-      });
+      const newOverrides = { ...overrides };
+      delete newOverrides[path];
+      setOverrides(newOverrides);
+      await syncToCloudflare({ overrides: newOverrides });
     } catch (err) {
       console.error(`Failed to reset image path: ${path}`, err);
     }
@@ -205,6 +277,7 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
     try {
       await saveGallery(newGallery);
       setGallery(newGallery);
+      await syncToCloudflare({ gallery: newGallery });
     } catch (err) {
       console.error("Failed to update gallery", err);
       throw err;
@@ -226,9 +299,9 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
 
       await savePlayer(updatedPlayer);
       
-      // Reload players from IndexedDB to sync state
       const reloadedPlayers = await getPlayers();
       setPlayers(reloadedPlayers);
+      await syncToCloudflare({ players: reloadedPlayers });
     } catch (err) {
       console.error("Failed to save player profile", err);
       throw err;
@@ -241,6 +314,7 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
       await deletePlayer(id);
       const reloadedPlayers = await getPlayers();
       setPlayers(reloadedPlayers);
+      await syncToCloudflare({ players: reloadedPlayers });
     } catch (err) {
       console.error("Failed to delete player profile", err);
       throw err;
@@ -262,9 +336,9 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
 
       await saveAchievement(updatedAchievement);
       
-      // Reload achievements from IndexedDB to sync state
       const reloadedAchievements = await getAchievements();
       setAchievements(reloadedAchievements);
+      await syncToCloudflare({ achievements: reloadedAchievements });
     } catch (err) {
       console.error("Failed to save achievement", err);
       throw err;
@@ -277,6 +351,7 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
       await deleteAchievement(id);
       const reloadedAchievements = await getAchievements();
       setAchievements(reloadedAchievements);
+      await syncToCloudflare({ achievements: reloadedAchievements });
     } catch (err) {
       console.error("Failed to delete achievement", err);
       throw err;
@@ -288,6 +363,7 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
     try {
       await saveClubDetails(details);
       setClubDetails(details);
+      await syncToCloudflare({ clubDetails: details });
     } catch (err) {
       console.error("Failed to update club details", err);
       throw err;
@@ -310,6 +386,14 @@ export function EditableImageProvider({ children }: { children: React.ReactNode 
       setAchievements(loadedAchievements);
       setOverrides(loadedOverrides);
       setClubDetails(loadedClubDetails);
+
+      await syncToCloudflare({
+        gallery: loadedGallery,
+        players: loadedPlayers,
+        achievements: loadedAchievements,
+        overrides: loadedOverrides,
+        clubDetails: loadedClubDetails,
+      });
     } catch (err) {
       console.error("Failed to reset database", err);
     } finally {
