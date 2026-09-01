@@ -205,7 +205,15 @@ export default function Footer() {
             </p>
             <span className="hidden sm:inline text-gray-700">•</span>
             <p className="text-gray-400">
-              Developed by <span className="text-gold font-semibold tracking-wide">Hadalbees Technologies</span>
+              Developed by{" "}
+              <a
+                href="https://hadalbees.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gold font-semibold tracking-wide hover:underline transition-all"
+              >
+                Hadalbees Technologies
+              </a>
             </p>
           </div>
 
