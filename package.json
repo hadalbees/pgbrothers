@@ -11,6 +11,7 @@
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview"
   },
   "dependencies": {
+    "@emailjs/browser": "^4.4.1",
     "@opennextjs/cloudflare": "^1.20.2",
     "framer-motion": "^13.1.0",
     "lucide-react": "^1.31.0",

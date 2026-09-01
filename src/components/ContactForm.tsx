@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Send, CheckCircle2, Loader2, AlertCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import emailjs from "@emailjs/browser";
 
 export default function ContactForm() {
   const [formState, setFormState] = useState({
@@ -16,11 +17,12 @@ export default function ContactForm() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const validate = () => {
     const tempErrors: Record<string, string> = {};
     if (!formState.fullName.trim()) tempErrors.fullName = "Full Name is required";
-    
+
     if (!formState.email.trim()) {
       tempErrors.email = "Email Address is required";
     } else if (!/\S+@\S+\.\S+/.test(formState.email)) {
@@ -53,32 +55,83 @@ export default function ContactForm() {
         return next;
       });
     }
+    if (errorMessage) {
+      setErrorMessage(null);
+    }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
 
     setIsSubmitting(true);
+    setErrorMessage(null);
 
-    // Simulate sending network request
-    setTimeout(() => {
+    const serviceId = process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || "service_1o9o6mv";
+    const templateId = process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || "template_drcgqur";
+    const publicKey = process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || "caU9M1F2OZ5mZYGtZ";
+
+    const templateParams = {
+      fullName: formState.fullName,
+      full_name: formState.fullName,
+      from_name: formState.fullName,
+      name: formState.fullName,
+      user_name: formState.fullName,
+
+      email: formState.email,
+      from_email: formState.email,
+      user_email: formState.email,
+      reply_to: formState.email,
+
+      phone: formState.phone,
+      phone_number: formState.phone,
+      user_phone: formState.phone,
+
+      role: formState.role,
+      category: formState.role,
+      user_role: formState.role,
+
+      message: formState.message,
+      user_message: formState.message,
+
+      to_name: "P.G. Brothers Team",
+    };
+
+    try {
+      const response = await emailjs.send(
+        serviceId,
+        templateId,
+        templateParams,
+        publicKey
+      );
+
+      if (response.status === 200 || response.text === "OK") {
+        setIsSuccess(true);
+        setFormState({
+          fullName: "",
+          email: "",
+          phone: "",
+          role: "",
+          message: "",
+        });
+      } else {
+        setErrorMessage("Failed to send message. Please try again later.");
+      }
+    } catch (error: unknown) {
+      console.error("EmailJS Error:", error);
+      const err = error as { text?: string; message?: string };
+      setErrorMessage(
+        err?.text || err?.message || "An unexpected error occurred while sending your message. Please try again."
+      );
+    } finally {
       setIsSubmitting(false);
-      setIsSuccess(true);
-      setFormState({
-        fullName: "",
-        email: "",
-        phone: "",
-        role: "",
-        message: "",
-      });
-    }, 2000);
+    }
   };
 
   return (
     <div className="glass-card p-6 sm:p-10 border border-white/5 relative overflow-hidden bg-charcoal-light/40">
       <div className="absolute inset-0 bg-shimmer opacity-10 pointer-events-none" />
-      
+
       <AnimatePresence mode="wait">
         {!isSuccess ? (
           <motion.form
@@ -90,6 +143,13 @@ export default function ContactForm() {
             className="space-y-6"
             noValidate
           >
+            {errorMessage && (
+              <div className="p-4 bg-red-950/40 border border-red-500/40 text-red-300 text-sm flex items-center gap-3 rounded-none">
+                <AlertCircle className="w-5 h-5 flex-shrink-0 text-red-400" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
             {/* Input grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Full Name */}
@@ -104,9 +164,8 @@ export default function ContactForm() {
                   value={formState.fullName}
                   onChange={handleInputChange}
                   placeholder="e.g. Rahul Kumar"
-                  className={`px-4 py-3 bg-charcoal border text-white text-sm focus:outline-none focus:border-gold transition-colors ${
-                    errors.fullName ? "border-muted-red" : "border-white/10"
-                  }`}
+                  className={`px-4 py-3 bg-charcoal border text-white text-sm focus:outline-none focus:border-gold transition-colors ${errors.fullName ? "border-muted-red" : "border-white/10"
+                    }`}
                 />
                 {errors.fullName && (
                   <p className="text-xs text-muted-red-light mt-1.5 flex items-center gap-1">
@@ -127,9 +186,8 @@ export default function ContactForm() {
                   value={formState.email}
                   onChange={handleInputChange}
                   placeholder="e.g. rahul@example.com"
-                  className={`px-4 py-3 bg-charcoal border text-white text-sm focus:outline-none focus:border-gold transition-colors ${
-                    errors.email ? "border-muted-red" : "border-white/10"
-                  }`}
+                  className={`px-4 py-3 bg-charcoal border text-white text-sm focus:outline-none focus:border-gold transition-colors ${errors.email ? "border-muted-red" : "border-white/10"
+                    }`}
                 />
                 {errors.email && (
                   <p className="text-xs text-muted-red-light mt-1.5 flex items-center gap-1">
@@ -150,9 +208,8 @@ export default function ContactForm() {
                   value={formState.phone}
                   onChange={handleInputChange}
                   placeholder="e.g. +91 9876543210"
-                  className={`px-4 py-3 bg-charcoal border text-white text-sm focus:outline-none focus:border-gold transition-colors ${
-                    errors.phone ? "border-muted-red" : "border-white/10"
-                  }`}
+                  className={`px-4 py-3 bg-charcoal border text-white text-sm focus:outline-none focus:border-gold transition-colors ${errors.phone ? "border-muted-red" : "border-white/10"
+                    }`}
                 />
                 {errors.phone && (
                   <p className="text-xs text-muted-red-light mt-1.5 flex items-center gap-1">
@@ -172,9 +229,8 @@ export default function ContactForm() {
                     name="role"
                     value={formState.role}
                     onChange={handleInputChange}
-                    className={`w-full px-4 py-3 bg-charcoal border text-white text-sm focus:outline-none focus:border-gold transition-colors appearance-none cursor-pointer ${
-                      errors.role ? "border-muted-red" : "border-white/10"
-                    }`}
+                    className={`w-full px-4 py-3 bg-charcoal border text-white text-sm focus:outline-none focus:border-gold transition-colors appearance-none cursor-pointer ${errors.role ? "border-muted-red" : "border-white/10"
+                      }`}
                   >
                     <option value="" disabled>Select your category</option>
                     <option value="Player">Player</option>
@@ -209,9 +265,8 @@ export default function ContactForm() {
                 value={formState.message}
                 onChange={handleInputChange}
                 placeholder="Tell us about your Kabaddi journey, your team, or how you want to support..."
-                className={`px-4 py-3 bg-charcoal border text-white text-sm focus:outline-none focus:border-gold transition-colors ${
-                  errors.message ? "border-muted-red" : "border-white/10"
-                }`}
+                className={`px-4 py-3 bg-charcoal border text-white text-sm focus:outline-none focus:border-gold transition-colors ${errors.message ? "border-muted-red" : "border-white/10"
+                  }`}
               />
               {errors.message && (
                 <p className="text-xs text-muted-red-light mt-1.5 flex items-center gap-1">
@@ -250,11 +305,11 @@ export default function ContactForm() {
             <div className="w-16 h-16 bg-forest-medium/20 text-gold border border-gold/30 rounded-none flex items-center justify-center mb-6">
               <CheckCircle2 className="w-10 h-10" />
             </div>
-            
+
             <h4 className="text-3xl font-oswald font-bold text-white uppercase tracking-wider mb-3">
               Message Received Successfully!
             </h4>
-            
+
             <p className="text-gray-300 text-sm max-w-md font-light leading-relaxed mb-8">
               Thank you for reaching out to P.G. Brothers. We appreciate your connection and support for Kabaddi. Our team will review your message and get back to you shortly.
             </p>
