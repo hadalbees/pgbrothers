@@ -191,17 +191,23 @@ export default function Footer() {
 
         {/* Footer bottom */}
         <div className="flex flex-col sm:flex-row items-center justify-between pt-8 gap-4">
-          <p className="text-xs text-gray-500 font-light text-center sm:text-left select-none">
-            © 2026 P.G. Brothers. All rights{" "}
-            <span
-              onClick={isAdmin ? logout : openLoginModal}
-              className="cursor-pointer hover:text-gray-400 active:text-gold transition-colors font-light"
-              title={isAdmin ? "Click to Exit Edit Mode" : undefined}
-            >
-              reserved
-            </span>
-            . Built with passion for grassroots sports.
-          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 text-xs text-gray-500 font-light text-center sm:text-left">
+            <p className="select-none">
+              © 2026 P.G. Brothers. All rights{" "}
+              <span
+                onClick={isAdmin ? logout : openLoginModal}
+                className="cursor-pointer hover:text-gray-400 active:text-gold transition-colors font-light"
+                title={isAdmin ? "Click to Exit Edit Mode" : undefined}
+              >
+                reserved
+              </span>
+              . Built with passion for grassroots sports.
+            </p>
+            <span className="hidden sm:inline text-gray-700">•</span>
+            <p className="text-gray-400">
+              Developed by <span className="text-gold font-semibold tracking-wide">Hadalbees Technologies</span>
+            </p>
+          </div>
 
           <button
             onClick={scrollToTop}
